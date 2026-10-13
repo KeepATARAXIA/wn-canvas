@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><title>文本格式回归验证</title>
+<body style="background:#181818;color:#ddd"><button id="run" style="padding:8px">运行编辑器交互回归</button><pre id="result">验证中</pre><div id="fixture"></div><script type="module">
+import {runTextRichContentTests} from '/tests/text-rich-content.browser.ts';
+import {runCanvasTextEditorTests} from '/tests/canvas-text-editor.browser.tsx';
+try { document.getElementById('result').textContent = JSON.stringify(runTextRichContentTests(), null, 2); }
+catch(error) { document.getElementById('result').textContent = error.stack; }
+document.getElementById('run').onclick = async () => {
+try { document.getElementById('result').textContent = JSON.stringify(await runCanvasTextEditorTests(document.getElementById('fixture')),null,2); }
+catch(error) { document.getElementById('result').textContent = error.stack; }
+};
+</script></body></html>

@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "无限画布 · 即梦自动桥接",
+  "version": "0.1.0",
+  "description": "将无限画布中的视频任务发送到已登录的即梦网页，并把成片送回画布。",
+  "permissions": ["tabs"],
+  "host_permissions": [
+    "http://localhost:3000/*",
+    "http://127.0.0.1:3000/*",
+    "https://jimeng.jianying.com/*"
+  ],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:3000/*", "http://127.0.0.1:3000/*"],
+      "js": ["canvas-content.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://jimeng.jianying.com/*"],
+      "js": ["jimeng-content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -1,0 +1,227 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "qwen_image_2.1_turbo_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_8b_int8_convrot.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "qwen_image_2.1_vae_bf16.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "TextEncodeQwenImage21",
+    "inputs": {
+      "clip": [
+        "2",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ],
+      "prompt": "保留 <image1> 的主体，调整为现代平面设计风格",
+      "negative_prompt": "",
+      "resolution": 1024,
+      "images.image_1": [
+        "30",
+        0
+      ],
+      "images.image_2": [
+        "31",
+        0
+      ],
+      "images.image_3": [
+        "32",
+        0
+      ],
+      "images.image_4": [
+        "33",
+        0
+      ],
+      "images.image_5": [
+        "34",
+        0
+      ],
+      "images.image_6": [
+        "35",
+        0
+      ],
+      "images.image_7": [
+        "36",
+        0
+      ],
+      "images.image_8": [
+        "37",
+        0
+      ],
+      "images.image_9": [
+        "38",
+        0
+      ],
+      "images.image_10": [
+        "39",
+        0
+      ]
+    }
+  },
+  "5": {
+    "class_type": "QwenImage21Cache",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "device": "auto",
+      "dtype": "default"
+    }
+  },
+  "6": {
+    "class_type": "SamplerCustom",
+    "inputs": {
+      "model": [
+        "5",
+        0
+      ],
+      "add_noise": true,
+      "noise_seed": 42,
+      "cfg": 1.0,
+      "positive": [
+        "4",
+        0
+      ],
+      "negative": [
+        "4",
+        1
+      ],
+      "sampler": [
+        "20",
+        0
+      ],
+      "sigmas": [
+        "21",
+        0
+      ],
+      "latent_image": [
+        "4",
+        2
+      ]
+    }
+  },
+  "7": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "6",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "8": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "7",
+        0
+      ],
+      "filename_prefix": "Qwen-Image-2.1-Turbo-Edit"
+    }
+  },
+  "10": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "qwen21-reference.png"
+    }
+  },
+  "11": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "qwen21-reference.png"
+    }
+  },
+  "12": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "qwen21-reference.png"
+    }
+  },
+  "13": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "qwen21-reference.png"
+    }
+  },
+  "14": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "qwen21-reference.png"
+    }
+  },
+  "15": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "qwen21-reference.png"
+    }
+  },
+  "16": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "qwen21-reference.png"
+    }
+  },
+  "17": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "qwen21-reference.png"
+    }
+  },
+  "18": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "qwen21-reference.png"
+    }
+  },
+  "19": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "qwen21-reference.png"
+    }
+  },
+  "20": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler"
+    }
+  },
+  "21": {
+    "class_type": "ManualSigmas",
+    "inputs": {
+      "sigmas": "1.0, 0.978453, 0.95418, 0.926626, 0.89508, 0.845148, 0.704534, 0.414568, 0.0"
+    }
+  },
+  "30": { "class_type": "JoinImageWithAlpha", "inputs": { "image": ["10", 0], "alpha": ["10", 1] } },
+  "31": { "class_type": "JoinImageWithAlpha", "inputs": { "image": ["11", 0], "alpha": ["11", 1] } },
+  "32": { "class_type": "JoinImageWithAlpha", "inputs": { "image": ["12", 0], "alpha": ["12", 1] } },
+  "33": { "class_type": "JoinImageWithAlpha", "inputs": { "image": ["13", 0], "alpha": ["13", 1] } },
+  "34": { "class_type": "JoinImageWithAlpha", "inputs": { "image": ["14", 0], "alpha": ["14", 1] } },
+  "35": { "class_type": "JoinImageWithAlpha", "inputs": { "image": ["15", 0], "alpha": ["15", 1] } },
+  "36": { "class_type": "JoinImageWithAlpha", "inputs": { "image": ["16", 0], "alpha": ["16", 1] } },
+  "37": { "class_type": "JoinImageWithAlpha", "inputs": { "image": ["17", 0], "alpha": ["17", 1] } },
+  "38": { "class_type": "JoinImageWithAlpha", "inputs": { "image": ["18", 0], "alpha": ["18", 1] } },
+  "39": { "class_type": "JoinImageWithAlpha", "inputs": { "image": ["19", 0], "alpha": ["19", 1] } }
+}

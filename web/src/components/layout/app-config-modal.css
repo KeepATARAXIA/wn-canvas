@@ -1,0 +1,194 @@
+.app-config-panel {
+    --config-muted: #475569;
+    --muted-foreground: var(--config-muted);
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    container-type: inline-size;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.dark .app-config-panel {
+    --config-muted: #b6c2d3;
+}
+
+.app-config-panel :is(.text-xs, [class~="text-[12px]"]) {
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.app-config-panel [class~="text-[11px]"] {
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.app-config-panel :is(.config-preference-output, .config-preference-advanced) .text-xs.font-medium {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.app-config-panel :is(.text-muted-foreground, .text-slate-600, .text-stone-500):not([data-state="active"]) {
+    color: var(--config-muted);
+}
+
+.app-config-panel .ant-form-item-label > label {
+    color: var(--foreground);
+    font-size: 14px;
+}
+
+.app-config-panel .config-section-heading {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.app-config-panel .config-section-description {
+    margin: 4px 0 0;
+    color: var(--config-muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.app-config-panel .config-section-heading.mb-3 {
+    margin-bottom: 12px;
+}
+
+.app-config-panel .config-surface > h3 {
+    margin: 0;
+}
+
+.app-config-panel .config-surface {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    padding: 20px;
+}
+
+.app-config-panel .config-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+    border-radius: 6px;
+    background: color-mix(in srgb, currentColor 8%, transparent);
+    padding: 3px 8px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+.config-preference-layout {
+    display: grid;
+    min-width: 0;
+    gap: 16px;
+}
+
+@container (min-width: 820px) {
+    .config-preference-layout {
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        align-items: start;
+    }
+}
+
+.app-config-panel-modal {
+    height: 100%;
+    min-height: 0;
+}
+
+.app-config-panel > .app-config-tabs {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    flex: 1;
+}
+
+.app-config-tab-list,
+.app-config-footer {
+    flex-shrink: 0;
+}
+
+.app-config-tab-list {
+    display: flex;
+    gap: 12px;
+    min-width: 0;
+    overflow-x: auto;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.app-config-tab-list [data-state="active"] {
+    color: var(--accent-foreground);
+}
+
+.app-config-panel-modal > .app-config-tabs > .app-config-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding: 0 8px 16px 0;
+}
+
+.app-config-scroll {
+    min-width: 0;
+}
+
+.app-config-panel:not(.app-config-panel-modal) .app-config-footer {
+    margin-top: 24px;
+}
+
+.config-preference-nav {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding-bottom: 16px;
+    background: var(--background);
+}
+
+.config-preference-nav .ant-segmented .ant-segmented-item {
+    color: var(--foreground);
+}
+
+.config-preference-nav .ant-segmented .ant-segmented-item-selected {
+    color: var(--accent-foreground);
+    font-weight: 600;
+}
+
+.config-preference-kinds button[aria-pressed="true"] {
+    outline: 1px solid currentColor;
+    outline-offset: -1px;
+}
+
+.config-preference-kinds button[aria-pressed] span.border {
+    border-color: currentColor;
+}
+
+.app-config-panel summary:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 4px;
+    border-radius: 4px;
+}
+
+@media (max-width: 600px) {
+    .app-config-tab-list > button {
+        padding: 12px 10px;
+        font-size: 14px;
+    }
+
+    .app-config-tab-list {
+        gap: 8px;
+    }
+
+    .app-config-panel .config-surface {
+        padding: 16px;
+    }
+
+    .app-config-panel-modal > .app-config-tabs > .app-config-scroll {
+        padding-right: 4px;
+    }
+}

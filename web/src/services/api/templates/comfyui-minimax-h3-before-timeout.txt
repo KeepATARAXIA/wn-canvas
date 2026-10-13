@@ -1,0 +1,421 @@
+// ComfyUI MiniMax-H3：9 图、3 视频、3 独立音频。
+// Base URL 填 ComfyUI 地址（通常是 http://127.0.0.1:8188），API Key 可填任意非空占位符。
+const IMAGE_LIMIT = 9;
+const VIDEO_LIMIT = 3;
+const AUDIO_LIMIT = 3;
+const CONDITIONING_NODE_ID = "136";
+const OUTPUT_NODE_ID = "92";
+
+function reportStage(stage, percent) {
+  if (typeof onProgress === "function" && !signal?.aborted) {
+    onProgress(percent ?? 0, { stage, indeterminate: percent === undefined });
+  }
+}
+reportStage("正在准备工作流与参考素材");
+
+if (images.length > IMAGE_LIMIT) throw new Error(`当前工作流最多支持 ${IMAGE_LIMIT} 张参考图，实际收到 ${images.length} 张`);
+if (videos.length > VIDEO_LIMIT) throw new Error(`当前工作流最多支持 ${VIDEO_LIMIT} 个参考视频，实际收到 ${videos.length} 个`);
+if (audios.length > AUDIO_LIMIT) throw new Error(`当前工作流最多支持 ${AUDIO_LIMIT} 个独立参考音频，实际收到 ${audios.length} 个`);
+
+const comfyUrl = String(baseUrl || "").replace(/\/+$/, "");
+if (!/^https?:\/\//i.test(comfyUrl)) throw new Error("Base URL 必须是 ComfyUI 地址，例如 http://127.0.0.1:8188");
+
+function errorDetail(error) {
+  const data = error?.response?.data;
+  if (!data) return error?.message || String(error);
+  if (typeof data === "string") return data;
+  try {
+    return JSON.stringify(data);
+  } catch {
+    return error?.message || String(error);
+  }
+}
+
+try {
+  await request({ method: "get", url: `${comfyUrl}/system_stats` });
+} catch (error) {
+  throw new Error(`无法连接 ComfyUI（${comfyUrl}）。请确认 ComfyUI 已启动，并允许画布地址跨域访问。${errorDetail(error)}`);
+}
+
+const workflowResponse = await fetch(new URL("/workflows/minimax-h3-local-api.json", window.location.origin), { signal });
+if (!workflowResponse.ok) throw new Error(`读取 MiniMax-H3 工作流模板失败（HTTP ${workflowResponse.status}）`);
+const workflow = await workflowResponse.json();
+const conditioningInputs = workflow[CONDITIONING_NODE_ID].inputs;
+
+workflow["138"].inputs.value = prompt;
+workflow["132"].inputs.value = Math.max(1, Number(params.seconds) || 5);
+workflow["129"].inputs.noise_seed = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+
+const h3Mode = params.h3Mode || "te";
+const needsRefModel = videos.length > 0 || audios.length > 0 || images.length > 2;
+if (needsRefModel) workflow["127"].inputs.unet_name = "minimax_h3_ref2va_pruned_int8_convrot.safetensors";
+let acceleratedModelNodeId = "127";
+if (h3Mode === "turbo") {
+  workflow["canvas_h3_turbo"] = { class_type: "LoraLoaderModelOnly", inputs: {
+    model: [acceleratedModelNodeId, 0], lora_name: needsRefModel ? "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors" : "minimax_h3_fl2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors", strength_model: 1,
+  }};
+  workflow["canvas_h3_shift"] = { class_type: "MiniMaxH3SigmaShift", inputs: { model: ["canvas_h3_turbo", 0], shift_video: needsRefModel ? 12 : 6, shift_audio: 3 }};
+  acceleratedModelNodeId = "canvas_h3_shift";
+  workflow["124"].inputs.steps = needsRefModel ? 4 : 8;
+  workflow["123"].inputs.sampler_name = "euler";
+}
+if (h3Mode === "spectrum") {
+  const info = await request({method: "get", url: `${comfyUrl}/object_info/SpectrumApplyMiniMaxH3`});
+  const schema = info.SpectrumApplyMiniMaxH3;
+  if (!schema) throw new Error("新版 H3 后端未加载 Spectrum 节点");
+  const inputs = {};
+  for (const [name, spec] of Object.entries(schema.input.required || {})) {
+    if (name === "model") inputs[name] = [acceleratedModelNodeId, 0];
+    else if (spec[1] && "default" in spec[1]) inputs[name] = spec[1].default;
+    else if (Array.isArray(spec[0])) inputs[name] = spec[0][0];
+  }
+  workflow["canvas_h3_spectrum"] = {class_type: "SpectrumApplyMiniMaxH3", inputs};
+  acceleratedModelNodeId = "canvas_h3_spectrum";
+}
+if (params.h3SageAttention !== false) {
+  const info = await request({ method: "get", url: `${comfyUrl}/object_info/MiniMaxH3MemoryEfficientSageAttentionPatch` });
+  if (!info.MiniMaxH3MemoryEfficientSageAttentionPatch) {
+    throw new Error("当前 ComfyUI 未提供 SageAttention 加速节点，请在视频设置中关闭 SageAttention 后重试");
+  }
+  const sageNodeId = "canvas_h3_sage_attention";
+  workflow[sageNodeId] = {
+    class_type: "MiniMaxH3MemoryEfficientSageAttentionPatch",
+    inputs: { model: [acceleratedModelNodeId, 0] },
+  };
+  acceleratedModelNodeId = sageNodeId;
+}
+if (h3Mode === "te" && params.h3TeSpeed !== false) {
+  const teSpeedNodeId = "canvas_h3_te_speed";
+  workflow[teSpeedNodeId] = {
+    class_type: "TESpeedMiniMaxH3",
+    inputs: {
+      model: [acceleratedModelNodeId, 0],
+      processing_control_value: 0.12,
+      processing_percent_1: 0.1,
+      processing_percent_2: 0.9,
+      mcs: 2,
+      device: "auto",
+    },
+  };
+  acceleratedModelNodeId = teSpeedNodeId;
+}
+workflow["124"].inputs.model = [acceleratedModelNodeId, 0];
+workflow["126"].inputs.model = [acceleratedModelNodeId, 0];
+
+// Keep the requested export dimensions separate from H3's 32-pixel latent alignment.
+const target = params.outputDimensions;
+if (!target || !Number.isInteger(target.width) || !Number.isInteger(target.height) ||
+    target.width < 32 || target.height < 32 || target.width % 2 || target.height % 2) {
+  throw new Error("视频输出尺寸无效，请刷新画布并重新选择分辨率");
+}
+conditioningInputs.width = Math.ceil(target.width / 32) * 32;
+conditioningInputs.height = Math.ceil(target.height / 32) * 32;
+delete workflow["115"];
+workflow["canvas_h3_output_size"] = {
+  class_type: "ImageScale",
+  inputs: {
+    image: workflow["130"].inputs.images,
+    upscale_method: "lanczos",
+    width: target.width,
+    height: target.height,
+    crop: "center",
+  },
+};
+workflow["130"].inputs.images = ["canvas_h3_output_size", 0];
+
+function extensionFor(name, type, fallback) {
+  const existing = String(name || "").match(/\.([a-z0-9]{1,8})$/i);
+  if (existing) return `.${existing[1].toLowerCase()}`;
+  const byMime = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "video/mp4": ".mp4",
+    "video/quicktime": ".mov",
+    "video/webm": ".webm",
+    "audio/mpeg": ".mp3",
+    "audio/mp4": ".m4a",
+    "audio/wav": ".wav",
+    "audio/x-wav": ".wav",
+    "audio/flac": ".flac",
+    "audio/ogg": ".ogg",
+  };
+  return byMime[String(type || "").toLowerCase()] || fallback;
+}
+
+async function uploadInput(blob, originalName, kind, index) {
+  const suffix = extensionFor(originalName, blob.type, kind === "image" ? ".png" : kind === "video" ? ".mp4" : ".wav");
+  const unique = typeof crypto?.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const filename = `canvas_${kind}_${index + 1}_${unique}${suffix}`;
+  const form = new FormData();
+  form.append("image", blob, filename);
+  form.append("type", "input");
+  form.append("subfolder", "infinite-canvas");
+  form.append("overwrite", "true");
+  let uploaded;
+  try {
+    uploaded = await request({ method: "post", url: `${comfyUrl}/upload/image`, data: form });
+  } catch (error) {
+    throw new Error(`上传${kind === "image" ? "图片" : kind === "video" ? "视频" : "音频"}失败：${errorDetail(error)}`);
+  }
+  if (!uploaded?.name) throw new Error("ComfyUI 上传接口没有返回文件名");
+  return [uploaded.subfolder, uploaded.name].filter(Boolean).join("/");
+}
+
+async function dataUrlBlob(dataUrl, index) {
+  const response = await fetch(dataUrl, { signal });
+  if (!response.ok) throw new Error(`读取第 ${index + 1} 张参考图失败（HTTP ${response.status}）`);
+  return response.blob();
+}
+
+async function mediaBlob(media, label) {
+  if (media?.blob instanceof Blob) return media.blob;
+  if (!media?.url) throw new Error(`${label}没有可读取的文件或 URL`);
+  let response;
+  try {
+    response = await fetch(media.url, { signal });
+  } catch (error) {
+    throw new Error(`读取${label}失败；如果它是远程 URL，请确认该地址允许跨域读取。${error?.message || error}`);
+  }
+  if (!response.ok) throw new Error(`读取${label}失败（HTTP ${response.status}）`);
+  return response.blob();
+}
+
+const imagePaths = await Promise.all(
+  images.map(async (dataUrl, index) => uploadInput(await dataUrlBlob(dataUrl, index), `reference_${index + 1}.png`, "image", index)),
+);
+const videoPaths = await Promise.all(
+  videos.map(async (media, index) => uploadInput(await mediaBlob(media, `第 ${index + 1} 个参考视频`), media.name, "video", index)),
+);
+const audioPaths = await Promise.all(
+  audios.map(async (media, index) => uploadInput(await mediaBlob(media, `第 ${index + 1} 个参考音频`), media.name, "audio", index)),
+);
+
+delete workflow["144"];
+delete workflow["145"];
+for (const name of Object.keys(conditioningInputs)) {
+  if (/^ref_(images|videos|video_audios|audios)\./.test(name)) delete conditioningInputs[name];
+}
+if (!needsRefModel) {
+  workflow[CONDITIONING_NODE_ID].class_type = "MiniMaxH3ImageToVideo";
+  delete conditioningInputs.audio_vae;
+  delete conditioningInputs.ref_image_size;
+}
+imagePaths.forEach((path, index) => {
+  const nodeId = `canvas_image_${index}`;
+  workflow[nodeId] = { inputs: { image: path }, class_type: "LoadImage" };
+  if (!needsRefModel) {
+    conditioningInputs[index === 0 ? "first_frame" : "last_frame"] = [nodeId, 0];
+  } else conditioningInputs[`ref_images.ref_image_${index}`] = [nodeId, 0];
+});
+videoPaths.forEach((path, index) => {
+  const loadNodeId = `canvas_video_${index}`;
+  const partsNodeId = `canvas_video_parts_${index}`;
+  workflow[loadNodeId] = { inputs: { file: path }, class_type: "LoadVideo" };
+  workflow[partsNodeId] = { inputs: { video: [loadNodeId, 0] }, class_type: "GetVideoComponents" };
+  conditioningInputs[`ref_videos.ref_video_${index}`] = [partsNodeId, 0];
+  conditioningInputs[`ref_video_audios.ref_video_audio_${index}`] = [partsNodeId, 1];
+});
+audioPaths.forEach((path, index) => {
+  const nodeId = `canvas_audio_${index}`;
+  workflow[nodeId] = { inputs: { audio: path }, class_type: "LoadAudio" };
+  conditioningInputs[`ref_audios.ref_audio_${index}`] = [nodeId, 0];
+});
+
+const clientId = typeof crypto?.randomUUID === "function" ? crypto.randomUUID() : `canvas_${Date.now()}`;
+if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+// Keep the submission alive until its acknowledgement so stopping during POST
+// cannot lose the job ID. The bundled backend also accepts this client-owned UUID.
+let promptId = crypto.randomUUID();
+let completed = false;
+let submissionStarted = false;
+let socket = null;
+let reconnectTimer;
+let stopProgress = false;
+let executionSeen = false;
+
+function nodeStage(nodeId) {
+  const type = workflow[nodeId]?.class_type;
+  const stages = {
+    UNETLoader: "正在加载视频生成模型",
+    CLIPLoader: "正在加载文本编码模型",
+    VAELoader: nodeId === "120" ? "正在加载音频 VAE" : "正在加载视频 VAE",
+    LoraLoaderModelOnly: "正在加载加速 LoRA",
+    MiniMaxH3ImageToVideo: "正在编码提示词与参考图片",
+    MiniMaxH3ReferenceToVideo: "正在编码提示词与参考素材",
+    SamplerCustomAdvanced: "正在准备采样（加载模型）",
+    VAEDecodeAudio: "正在解码音频 VAE",
+    VAEDecode: "正在解码视频 VAE",
+    ImageScale: "正在调整视频分辨率",
+    CreateVideo: "正在合成视频与音频",
+    SaveVideo: "正在编码并保存视频",
+    LoadImage: "正在读取参考图片",
+    LoadVideo: "正在读取参考视频",
+    GetVideoComponents: "正在提取参考视频画面与音频",
+    LoadAudio: "正在读取参考音频",
+  };
+  return stages[type] || "正在准备生成参数";
+}
+
+function closeProgress() {
+  stopProgress = true;
+  clearTimeout(reconnectTimer);
+  socket?.close();
+  socket = null;
+}
+
+async function connectProgress(reconnecting = false) {
+  if (stopProgress || signal?.aborted || typeof onProgress !== "function") return;
+  if (typeof WebSocket !== "function") {
+    reportStage("无法连接实时进度，正在等待后台结果");
+    return;
+  }
+  await new Promise(resolve => {
+    const connection = new WebSocket(comfyUrl.replace(/^http/i, "ws") + "/ws?clientId=" + encodeURIComponent(clientId));
+    socket = connection;
+    let settled = false;
+    const settle = () => { if (!settled) { settled = true; clearTimeout(timer); resolve(); } };
+    const timer = setTimeout(() => { settle(); connection.close(); }, 5000);
+    connection.addEventListener("open", () => {
+      settle();
+      if (reconnecting && !stopProgress && !signal?.aborted) reportStage("进度已重连，等待后台更新");
+    }, { once: true });
+    connection.addEventListener("error", () => { settle(); connection.close(); }, { once: true });
+    connection.addEventListener("close", () => {
+      settle();
+      if (stopProgress || signal?.aborted || socket !== connection) return;
+      reportStage("进度连接中断，正在重连（后台任务继续）");
+      reconnectTimer = setTimeout(() => { void connectProgress(true); }, 1500);
+    }, { once: true });
+    connection.addEventListener("message", event => {
+      if (stopProgress || signal?.aborted || socket !== connection || typeof event.data !== "string") return;
+      let message;
+      try { message = JSON.parse(event.data); } catch { return; }
+      const data = message?.data;
+      if (data?.prompt_id !== promptId) return;
+      if (["execution_start", "executing", "progress"].includes(message.type)) executionSeen = true;
+      if (message.type === "execution_start") reportStage("后台已开始，正在准备模型");
+      if (message.type === "executing") {
+        reportStage(data.node == null ? "后台执行结束，正在读取结果" : nodeStage(String(data.node)));
+      }
+      if (message.type === "progress" && Number.isFinite(data.value) && Number.isFinite(data.max) && data.max > 0) {
+        const nodeId = String(data.node);
+        if (!workflow[nodeId]) return;
+        const percent = Math.max(0, Math.min(100, data.value / data.max * 100));
+        const stage = workflow[nodeId].class_type === "SamplerCustomAdvanced"
+          ? `正在采样 ${data.value}/${data.max} 步`
+          : nodeStage(nodeId);
+        reportStage(stage, percent);
+      }
+      if (message.type === "execution_error") reportStage("后台执行失败，正在读取错误详情");
+      if (message.type === "execution_interrupted") reportStage("后台任务已停止");
+    });
+  });
+}
+signal?.addEventListener("abort", closeProgress, { once: true });
+
+async function cancelOwnJob() {
+  try {
+    const response = await fetch(http.url(`${comfyUrl}/api/jobs/${encodeURIComponent(promptId)}/cancel`), {
+      method: "POST",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  } catch (error) {
+    throw new Error(`无法确认后台任务 ${promptId} 已取消，请在 ComfyUI 队列中检查该任务。${errorDetail(error)}`);
+  }
+}
+
+async function generate() {
+  reportStage("正在连接后台进度，等待提交");
+  await connectProgress();
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  if (socket?.readyState === 1) reportStage("正在提交任务");
+  // Persist the client-owned ID before POST so refresh cannot lose an accepted job.
+  const checkpoint = () => params.onTaskSubmitted?.({ id: promptId, baseUrl: comfyUrl, outputNodeId: OUTPUT_NODE_ID });
+  await checkpoint();
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  let queued;
+  try {
+    submissionStarted = true;
+    const response = await fetch(http.url(`${comfyUrl}/prompt`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: workflow, client_id: clientId, prompt_id: promptId }),
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}：${await response.text()}`);
+    queued = await response.json();
+  } catch (error) {
+    throw new Error(`ComfyUI 拒绝了工作流：${errorDetail(error)}`);
+  }
+
+  if (!queued?.prompt_id) throw new Error(`ComfyUI 没有返回任务 ID：${JSON.stringify(queued || {})}`);
+  if (promptId !== queued.prompt_id) {
+    promptId = queued.prompt_id;
+    await checkpoint();
+  }
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  if (socket?.readyState === 1 && !executionSeen) reportStage("已提交，正在排队等待执行");
+
+  function historyError(entry) {
+    const messages = entry?.status?.messages || [];
+    const failure = messages.find((item) => item?.[0] === "execution_error")?.[1];
+    return failure?.exception_message || failure?.exception_type || entry?.status?.status_str || "未知执行错误";
+  }
+
+  function findOutputFile(entry) {
+    const output = entry?.outputs?.[OUTPUT_NODE_ID];
+    if (!output) return null;
+    const files = Object.values(output).flatMap((value) => (Array.isArray(value) ? value : []));
+    return (
+      files.find((file) => file?.filename && /\.(mp4|mov|webm|mkv)(\?.*)?$/i.test(file.filename)) ||
+      files.find((file) => file?.filename && String(file?.format || "").startsWith("video/")) ||
+      null
+    );
+  }
+
+  const outputFile = await poll(
+    () => request({ method: "get", url: `${comfyUrl}/history/${encodeURIComponent(promptId)}` }),
+    (history) => {
+      const entry = history?.[promptId];
+      if (!entry) return null;
+      if (entry.status?.status_str === "error") throw new Error(`ComfyUI 执行失败：${historyError(entry)}`);
+      const file = findOutputFile(entry);
+      if (file) return file;
+      if (entry.status?.completed === true || entry.status?.status_str === "success") {
+        throw new Error(`ComfyUI 已完成，但输出节点 ${OUTPUT_NODE_ID} 没有返回视频文件`);
+      }
+      return null;
+    },
+    { intervalMs: 2500, timeoutMs: 3600000 },
+  );
+  completed = true;
+  closeProgress();
+  reportStage("正在传回视频到画布");
+
+  const query = new URLSearchParams({
+    filename: outputFile.filename,
+    subfolder: outputFile.subfolder || "",
+    type: outputFile.type || "output",
+  });
+  const outputBlob = await request({
+    method: "get",
+    url: `${comfyUrl}/view?${query.toString()}`,
+    responseType: "blob",
+  });
+  return { blob: outputBlob };
+}
+
+try {
+  return await generate();
+} catch (error) {
+  // Cancellation uses a fresh signal and an ID-scoped API; never clear the queue
+  // or send a global interrupt, which could stop another canvas user's job.
+  if (submissionStarted && !completed) await cancelOwnJob();
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  throw error;
+} finally {
+  closeProgress();
+  signal?.removeEventListener("abort", closeProgress);
+}

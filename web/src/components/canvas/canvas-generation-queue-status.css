@@ -1,0 +1,25 @@
+.canvas-generation-queue-status {
+    overflow: hidden;
+}
+
+.canvas-generation-queue-status::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(100deg, transparent 15%, rgba(147, 197, 253, .10) 35%, rgba(191, 219, 254, .22) 50%, rgba(147, 197, 253, .10) 65%, transparent 85%);
+    transform: translateX(-100%);
+    animation: canvas-queue-flow 2.6s linear infinite;
+}
+
+@keyframes canvas-queue-flow {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .canvas-generation-queue-status::before {
+        animation: none;
+        transform: none;
+    }
+}

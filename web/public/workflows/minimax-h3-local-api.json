@@ -1,0 +1,224 @@
+{
+  "92": {
+    "inputs": {
+      "video": [
+        "130",
+        0
+      ],
+      "filename_prefix": "video/MiniMax_H3",
+      "format": "auto",
+      "codec": "auto"
+    },
+    "class_type": "SaveVideo"
+  },
+  "115": {
+    "inputs": {
+      "aspect_ratio": "21:9 (Ultrawide)",
+      "megapixels": 2,
+      "multiple": 32
+    },
+    "class_type": "ResolutionSelector"
+  },
+  "119": {
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "class_type": "VAELoader"
+  },
+  "120": {
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "VAELoader"
+  },
+  "121": {
+    "inputs": {
+      "samples": [
+        "125",
+        0
+      ],
+      "vae": [
+        "120",
+        0
+      ]
+    },
+    "class_type": "VAEDecodeAudio"
+  },
+  "122": {
+    "inputs": {
+      "samples": [
+        "125",
+        0
+      ],
+      "vae": [
+        "119",
+        0
+      ]
+    },
+    "class_type": "VAEDecode"
+  },
+  "123": {
+    "inputs": {
+      "sampler_name": "res_multistep"
+    },
+    "class_type": "KSamplerSelect"
+  },
+  "124": {
+    "inputs": {
+      "model": [
+        "127",
+        0
+      ],
+      "scheduler": "simple",
+      "steps": 20,
+      "denoise": 1
+    },
+    "class_type": "BasicScheduler"
+  },
+  "125": {
+    "inputs": {
+      "noise": [
+        "129",
+        0
+      ],
+      "guider": [
+        "126",
+        0
+      ],
+      "sampler": [
+        "123",
+        0
+      ],
+      "sigmas": [
+        "124",
+        0
+      ],
+      "latent_image": [
+        "136",
+        1
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced"
+  },
+  "126": {
+    "inputs": {
+      "model": [
+        "127",
+        0
+      ],
+      "conditioning": [
+        "136",
+        0
+      ]
+    },
+    "class_type": "BasicGuider"
+  },
+  "127": {
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader"
+  },
+  "128": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader"
+  },
+  "129": {
+    "inputs": {
+      "noise_seed": 464344640877830
+    },
+    "class_type": "RandomNoise"
+  },
+  "130": {
+    "inputs": {
+      "images": [
+        "122",
+        0
+      ],
+      "audio": [
+        "121",
+        0
+      ],
+      "fps": 24,
+      "bit_depth": 8
+    },
+    "class_type": "CreateVideo"
+  },
+  "131": {
+    "inputs": {
+      "values.a": [
+        "132",
+        0
+      ],
+      "expression": "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"
+    },
+    "class_type": "ComfyMathExpression"
+  },
+  "132": {
+    "inputs": {
+      "value": 10
+    },
+    "class_type": "PrimitiveFloat"
+  },
+  "136": {
+    "inputs": {
+      "clip": [
+        "128",
+        0
+      ],
+      "vae": [
+        "119",
+        0
+      ],
+      "audio_vae": [
+        "120",
+        0
+      ],
+      "ref_images.ref_image_0": [
+        "145",
+        0
+      ],
+      "prompt": [
+        "138",
+        0
+      ],
+      "width": [
+        "115",
+        0
+      ],
+      "height": [
+        "115",
+        1
+      ],
+      "length": [
+        "131",
+        1
+      ],
+      "ref_image_size": "match"
+    },
+    "class_type": "MiniMaxH3ReferenceToVideo"
+  },
+  "138": {
+    "inputs": {
+      "value": "生成一段 5秒、21:9横版、电影级CG电竞品牌开场动画。整体参考高端电竞CG短片的开头表达方式：极简黑场、平面Logo、强烈光学曝光、红黑主色、胶片漏光、短暂失焦、反复闪现、最后稳定定版。\n只保留这种开场语言与节奏，不复制任何已有作品的原Logo、原文字、原排版和完全一致的镜头顺序。\n\n时间脚本\n\n0.0—0.4秒\n纯黑背景开始，画面几乎没有场景信息，只存在非常轻微的深红色暗漏光。一个平面电竞Logo以极度失焦的状态短暂掠过画面边缘，构图偏斜，带有真实镜头拖影、胶片抖动和轻微曝光不稳。\n不是三维金属，不是机械组装，不是能量粒子，只是一个被快速扫过的平面标识残影。\n\n0.4—0.8秒\nLogo快速回到画面中心附近，但仍然模糊不清。画面突然出现一次高曝光冲洗，整个屏幕被暖白色和灰白色覆盖，Logo在高曝光里只剩浅灰轮廓。紧接着白色迅速被橙红色、深红色光晕吞没，形成一种类似胶片被强光照射后的光学污染感。\n\n0.8—1.5秒\n画面中央形成不规则的深色暗区，Logo位于暗区中心若隐若现。红色、酒红色、玫红色光斑在画面边缘缓慢游动，曝光轻微呼吸，焦点轻微漂移。\nLogo短暂清晰一下，马上又轻微失焦，给人“快要看清、又被光冲掉”的感觉。\n\n1.5—3.2秒\nLogo终于稳定在画面正中央，保持平面、简洁、清晰、静止。颜色为低饱和暖米金色或浅米白色，背景为纯黑到深黑红之间的极暗空间。四周持续存在柔和的深红、酒红、琥珀红胶片漏光，形状不规则，边缘柔软，缓慢呼吸变化。\n整个阶段重点是：黑色负空间、Logo稳定、光学质感高级、节奏克制。\n不要炫技，不要大运镜，不要复杂转场。\n\n3.2—4.0秒\n边缘漏光缓慢增强，底部和侧边出现更明显的暖色高光晕。Logo略微变亮，出现极轻微曝光溢出和柔化，但主体位置不变。随后一记更强的暖白色曝光突然冲满全屏，形成一次完整闪白。\n\n4.0—5.0秒\n闪白退去后，原Logo消失。黑色背景重新出现，中央出现一行简洁小字，例如：\n“A salute to all esports players.”\n文字采用细窄、克制、现代无衬线字体，暖米白色，水平居中。背景继续保留缓慢流动的深红色胶片漏光与微弱颗粒。最后以轻微胶片门抖动和曝光呼吸结束。\n\n风格要求\n电影级CG品牌片头质感\n黑色负空间占绝对主导\n平面Logo，不做三维厚重金属\n红黑暖色光学系统：深红、酒红、玫红、琥珀红、暖白、米金\n强调 胶片曝光冲洗感、漏光感、轻微失焦、轻微抖动、真实光学污染\n节奏高级、克制、压抑、神秘\n不要做成普通电竞宣传片\n不要多元素堆砌\n关键词补充\n\n35mm film look, optical exposure, film burn, light leak, soft halation, shallow defocus, gate weave, subtle grain, dark negative space, minimal brand reveal, elegant logo intro, cinematic esports identity\n\n负面限制\n\n禁止人物\n禁止电竞场馆\n禁止键盘鼠标\n禁止游戏UI\n禁止枪械\n禁止粒子爆炸\n禁止扫描线\n禁止数字故障风\n禁止RGB错位\n禁止机械组装\n禁止立体金属Logo\n禁止Logo冲向镜头\n禁止能量对撞\n禁止赛博霓虹灯条堆砌\n禁止复杂背景场景\n禁止文字乱码"
+    },
+    "class_type": "PrimitiveStringMultiline"
+  },
+  "144": {
+    "inputs": {
+      "image": "jimeng-2026-04-20-5641.png"
+    },
+    "class_type": "LoadImage"
+  },
+  "145": {
+    "inputs": {
+      "image": "pasted/image (8).png"
+    },
+    "class_type": "LoadImage"
+  }
+}

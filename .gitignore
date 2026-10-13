@@ -1,0 +1,71 @@
+# Dependencies and build output
+**/node_modules/
+**/dist/
+**/coverage/
+**/.vite/
+**/.next/
+**/*.tsbuildinfo
+web/public/plugins/
+
+# Optional runtimes and models
+/extras/
+/runtime/
+**/*.safetensors
+**/*.gguf
+**/*.ckpt
+**/*.pt
+**/*.pth
+**/*.onnx
+**/*.pyd
+**/*.exe
+**/*.dll
+**/*.whl
+
+# Local credentials and configuration
+.env
+.env.*
+!.env.example
+!.env.sample
+!**/.env.example
+!**/.env.sample
+**/*.pem
+**/*.key
+**/canvas-agent.json
+**/auth.json
+**/.infinite-canvas/
+
+# Runtime data and validation artifacts
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.venv/
+**/venv/
+**/canvas-jobs/
+**/*.log
+/audits/
+/.codex-backups/
+/.codex-upgrades/
+/.wn-updates/
+/.local-validation/
+/.local-dependencies/
+/artifacts/
+/tmp/
+/temp/
+
+# Materials intentionally excluded from this candidate
+/web/public/local-prompt-skills/h3-prompt-writing.json
+/plugins/infinite-canvas/
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+
+# Local maintenance notes
+/WORKLOG.md
+/HISTORY.md
+/SYNC-REPORT.md
+/CLEAN-INSTALL-REPORT.md
+/GITHUB-PUBLISH-PLAN.md

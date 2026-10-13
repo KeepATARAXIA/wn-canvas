@@ -1,0 +1,31 @@
+/* Keep workspace typography separate from the canvas editor and its shared controls. */
+.workspace-page,
+.workspace-top-nav {
+    --workspace-muted: #52627a;
+    --workspace-text: #17212b;
+    font-size: 14px;
+}
+
+.dark .workspace-page,
+.dark .workspace-top-nav {
+    --workspace-muted: #a8b5c9;
+    --workspace-text: #f1f5f9;
+}
+
+.workspace-page .text-xs {
+    font-size: 13px;
+}
+
+.workspace-page [class~="text-[11px]"] {
+    font-size: 12px;
+}
+
+.workspace-page .workspace-muted,
+.workspace-top-nav .workspace-muted,
+.workspace-page :where(.text-muted-foreground, .text-stone-500, .text-slate-500, .text-slate-600):not([data-state="active"]) {
+    color: var(--workspace-muted);
+}
+
+.workspace-top-nav a.workspace-muted:hover {
+    color: var(--workspace-text);
+}

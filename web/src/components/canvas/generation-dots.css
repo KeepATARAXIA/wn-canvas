@@ -1,0 +1,31 @@
+.generation-dots {
+    position: absolute;
+    inset: 18px 18px 44px;
+    width: calc(100% - 36px);
+    height: calc(100% - 62px);
+    pointer-events: none;
+    color: #3587ff;
+    mask-image: radial-gradient(ellipse at center, #000 48%, transparent 82%);
+}
+
+.generation-dots-wave {
+    transform-box: view-box;
+    transform-origin: center;
+    animation: generation-dot-flow 4.5s ease-in-out infinite;
+}
+
+.generation-dots-wave-secondary {
+    animation-direction: reverse;
+    animation-delay: -2.5s;
+    animation-duration: 6s;
+}
+
+@keyframes generation-dot-flow {
+    0%, 100% { transform: translate(-16%, 14%) scale(0.75); opacity: 0.55; }
+    35% { transform: translate(22%, -16%) scale(1.25); opacity: 1; }
+    70% { transform: translate(8%, 22%) scale(0.9); opacity: 0.85; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .generation-dots-wave { animation: none; }
+}
