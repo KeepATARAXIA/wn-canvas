@@ -4,7 +4,7 @@
 
 WN Canvas 基于 [basketikun/infinite-canvas](https://github.com/basketikun/infinite-canvas) 持续修改，保留原作者版权与 [MIT 许可证](LICENSE)。第三方资料、模型和可选工具各自适用其许可，见 [第三方说明](THIRD-PARTY-NOTICES.md)。
 
-**当前为源码预览版。** 本目录提供画布源码和接入代码，不含模型、Python/Node 运行时或整合包内的第三方程序；尚未发布正式 Release 或免安装运行包。
+**本目录为 WN Canvas 源码预览版。** 提供画布源码和接入代码，不含模型、Python/Node 运行时或整合包内的第三方程序。Windows 无模型运行包可从 [GitHub Releases](https://github.com/KeepATARAXIA/wn-canvas/releases) 获取，具体功能和验收范围以各版本说明为准。
 
 基础画布已在 Windows 的全新独立目录完成安装和浏览器验收：使用 Node.js 24.15、npm 11.12，通过标准 `npm ci` 安装，并实际验证文字、图片、拖动、连线、编组复制和项目 ZIP 往返。此次验证在同一台电脑进行，不代表跨机器或全部可选能力已验收。根 `VERSION` 与 `CHANGELOG.md` 为沿用的构建输入，不代表本候选目录已正式发布。详细范围见 [验证记录](VALIDATION.md)。
 
@@ -19,11 +19,13 @@ WN Canvas 基于 [basketikun/infinite-canvas](https://github.com/basketikun/infi
 
 基础画布可单独启动。AI 生成、Agent 和视频工具需要各自的后端、账号、模型或依赖，不随启动器自动安装。
 
+本地开发中的模型接入入口位于 **配置 → 模型与服务 → 开始使用 AI**，可选择“安装本地模型”“连接已有服务”或“配置云端 API”。[千问图片安装指南](web/public/model-setup/qwen.md) 和 [H3 视频安装与兼容说明](web/public/model-setup/h3.md) 提供官方来源、模型目录、启动和验证步骤。千问 Turbo 已在官方新运行环境完成本机 1K 生图与单图编辑实测；H3 的 WN 参考视频扩展尚未形成独立安装交付。现有公开 `v0.1.0-preview.1` 不包含本次新增入口。
+
 ## Quick Start / 快速开始
 
 ### 1. 下载并解压源码
 
-GitHub 仓库公开后，在仓库页面选择 **Code → Download ZIP**，解压到自己的项目目录。以下命令中的“项目根目录”，指同时包含 `web` 文件夹和 `一键启动.cjs` 的目录。请先解压，再运行启动入口。
+在 [GitHub 仓库](https://github.com/KeepATARAXIA/wn-canvas) 选择 **Code → Download ZIP**，解压到自己的项目目录。以下命令中的“项目根目录”，指同时包含 `web` 文件夹和 `一键启动.cjs` 的目录。请先解压，再运行启动入口。
 
 ### 2. 准备 Node.js
 
@@ -76,7 +78,7 @@ node 一键启动.cjs --port 13107
 |---|---|---|
 | 云端 AI 接口 | 账号、API Key、模型权限和额度 | 保留渠道与自定义调用能力；费用按服务商规则计算 |
 | Ollama / LM Studio / OpenAI 兼容接口 | 已启动的本地服务及模型 | 保留配置入口；不附运行时和模型 |
-| ComfyUI 图片与视频生成 | 兼容版本、模型、节点和可运行工作流 | 保留接入代码；Qwen、H3 的整套环境及维护补丁尚未形成独立安装交付 |
+| ComfyUI 图片与视频生成 | 兼容版本、模型、节点和可运行工作流 | 提供千问官方安装与接入指南；H3 参考视频扩展尚未独立交付，详见上方兼容说明 |
 | 视频处理与 SeedVR2 超分 | Python、FFmpeg、Video2X、SeedVR2 等组件 | 保留桥接源码；仍有整合包路径约定，需完成适配后使用 |
 | 本地提示词辅助 | 对应后端或本机 Agent | 保留四份带许可的离线资料包；未分发 MiniMax 官方提示指南正文 |
 | 即梦网页桥接 | 自己的已登录网页、扩展和可用额度 | [扩展安装说明](browser-extension/jimeng-canvas-bridge/README.md)；受网页变化与服务规则影响 |
@@ -138,7 +140,7 @@ GPU 生成、真实 Agent/Codex 登录、云端生成、WebDAV 远端同步、�
 
 ## Updates / 升级
 
-本源码预览版尚未启用在线更新，也没有正式 Release 更新通道。后续源码版本需手动下载、安装依赖并启动。升级前先导出画布 ZIP；如需备份渠道配置，请妥善保管含密钥的配置文件。建议将新版本解压到另一个目录，验证可用后再决定是否替换旧目录。
+源码预览版和 Windows 预发布包尚未启用在线更新。模型安装入口需使用包含该功能的新版本，v0.1.0-preview.1 没有这些入口。后续源码版本需手动下载、安装依赖并启动。升级前先导出画布 ZIP；如需备份渠道配置，请妥善保管含密钥的配置文件。建议将新版本解压到另一个目录，验证可用后再决定是否替换旧目录。
 
 ## Data and Access / 数据与访问
 
@@ -150,6 +152,6 @@ GPU 生成、真实 Agent/Codex 登录、云端生成、WebDAV 远端同步、�
 
 ## Feedback / 反馈与贡献
 
-正式仓库发布后，可通过其 Issues 反馈。请附操作步骤、预期和实际结果、系统及 Node/浏览器版本；涉及模型时补充后端与节点版本，并移除密钥、token 和私人素材。提交改动前先说明具体问题，保持最小必要范围。
+可通过 [GitHub Issues](https://github.com/KeepATARAXIA/wn-canvas/issues) 反馈。请附操作步骤、预期和实际结果、系统及 Node/浏览器版本；涉及模型时补充后端与节点版本，并移除密钥、token 和私人素材。提交改动前先说明具体问题，保持最小必要范围。
 
 上传范围、排除文件和发布前待办见 [公开文件说明](OPEN-SOURCE-MANIFEST.md)。

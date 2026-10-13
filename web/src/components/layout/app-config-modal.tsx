@@ -9,11 +9,13 @@ import { ChannelEditorDrawer } from "@/components/layout/channel-editor-drawer";
 import { ConfigLocalProxy } from "@/components/layout/config-local-proxy";
 import { ConfigLocalStorage } from "@/components/layout/config-local-storage";
 import { ConfigCapabilityStatus } from "@/components/layout/config-capability-status";
+import { ConfigModelSetup } from "@/components/layout/config-model-setup";
 import { ConfigGenerationPreferences } from "@/components/layout/config-generation-preferences";
 import { ConfigAppearanceTools } from "@/components/layout/config-appearance-tools";
 import { InfoPopover } from "@/components/ui/compact-controls";
 import { LOCAL_SERVICE_PRESETS, type LocalServicePreset } from "@/constant/local-service-presets";
 import type { AppLocale } from "@/i18n";
+import { modelSetupChannelDraft, type LocalSetupModel } from "@/lib/model-setup";
 import { exportAppConfig, hasAppConfigImportBackup, importAppConfig, restoreAppConfigImportBackup } from "@/services/config-file";
 import { syncAppDataToWebdav, type AppSyncDomainKey, type AppSyncProgressEvent } from "@/services/app-sync";
 import { testWebdavConnection, WEBDAV_MANIFEST_FILE_NAME } from "@/services/webdav-sync";
@@ -136,6 +138,12 @@ export function AppConfigPanel({ showDoneButton = false, initialTab = "status" }
         setEditingChannelId(unusedDefault ? config.channels[0].id : channel.id);
     };
 
+    const openModelSetupChannel = (kind: LocalSetupModel) => {
+        const draft = modelSetupChannelDraft(config.channels, kind);
+        setNewChannel(draft);
+        setEditingChannelId(draft.id);
+    };
+
     const deleteChannel = (id: string) => {
         if (config.channels.length <= 1) {
             message.warning(t("config.channels.keepOne"));
@@ -211,6 +219,7 @@ export function AppConfigPanel({ showDoneButton = false, initialTab = "status" }
                         label: en ? "Models & services" : "模型与服务",
                         children: (
                             <div className="space-y-6">
+                                <ConfigModelSetup onConfigureLocal={openModelSetupChannel} onConfigureCloud={addChannel} />
                                 <ConfigCapabilityStatus
                                     active={dialogOpen !== false}
                                     onEditChannel={setEditingChannelId}

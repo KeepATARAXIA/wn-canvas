@@ -334,10 +334,6 @@ export const useConfigStore = create<ConfigStore>()(
                         if (!localQwen.models.some((item) => item.workflowId === model.workflowId || item.name === model.name)) localQwen.models.push({ ...model });
                     }
                 }
-                // Local installation: route the bundled H3 channel through the canvas server.
-                const localH3 = channels.find((channel) => channel.id === "local-comfyui");
-                const migrateLocalH3 = localH3 && /^http:\/\/(127\.0\.0\.1|localhost):8188\/?$/.test(localH3.baseUrl);
-                if (migrateLocalH3) localH3.baseUrl = defaultConfig.channels[0].baseUrl;
                 // Upgrade the bundled script only; preserve user-authored channel scripts.
                 for (const channel of channels) {
                     for (const model of channel.models) {
@@ -375,7 +371,7 @@ export const useConfigStore = create<ConfigStore>()(
                         vquality: /minimax[\s_-]*h3/i.test(config.videoModel) ? normalizeH3Resolution(config.vquality) : config.vquality || "480",
                         videoGenerateAudio: config.videoGenerateAudio || "true",
                         videoWatermark: config.videoWatermark || "false",
-                        videoH3SageAttention: migrateLocalH3 ? "false" : config.videoH3SageAttention || "false",
+                        videoH3SageAttention: config.videoH3SageAttention || "false",
                         videoH3TeSpeed: config.videoH3TeSpeed || "true",
                         videoH3Mode: config.videoH3Mode || "te",
                         videoMode: config.videoMode === "reference" ? "reference" : "frames",
